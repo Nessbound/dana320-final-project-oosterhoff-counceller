@@ -1,0 +1,84 @@
+```{r imports}
+
+# Import libraries
+library(tidyverse)
+library(shiny)
+library(ggplot2)
+
+```
+
+```{r data}
+
+# Load in the music data
+musicData <- get(load("../Data/data-music.RData"))
+
+# Show the music data
+str(musicData)
+
+```
+
+```{r build}
+
+sectionsToSnip <- c(
+    "danceability",
+    "energy",
+    "speechiness",
+    "acousticness",
+    "instrumentalness",
+    "liveness"
+)
+
+songOne <- musicData %>% subset(track_name == "Dear Maria, Count Me In")
+songOne <- songOne[1,]
+songTwo <- musicData %>% subset(track_name == "Alive")
+songTwo <- songTwo[1,]
+
+graphFrame <- data.frame(matrix(ncol = 3, nrow = 0))
+colnames(graphFrame) <- c("Name", "Value", "Winner")
+
+for(i in 1:length(songOne)) {
+    if(names(songOne[i]) %in% sectionsToSnip) {
+        name = names(songOne[i])
+        if(songOne[[i]] > songTwo[[i]]) {
+            value <- abs(songOne[[i]]) * -1
+            winner <- "Song One"
+        }
+        else {
+            value <- abs(songTwo[[i]])
+            winner <- "Song Two"
+        }
+        graphFrame <- rbind(
+            graphFrame,
+            data.frame(
+                "Name" = name,
+                "Value" = value,
+                "Winner" = winner
+            )
+        )
+    }
+}
+
+graphFrame
+
+```
+
+```{r plot}
+
+ggplot(
+    graphFrame,
+    aes(
+        x = Name,
+        y = Value,
+        fill = Winner
+    )
+) + 
+geom_bar(
+    stat = "identity"
+) +
+coord_flip() +
+ylim(
+    -1.0, 
+    1.0
+)
+
+```
