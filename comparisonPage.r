@@ -19,18 +19,58 @@ ui <- fluidPage(
 
         # Input section
         sidebarPanel(
+
+            # Song one label
+            h3(
+                "Song One Options",
+                align = "center"
+            ),
+
+            # Select artist one
+            selectizeInput(
+                "firstArtist",
+                "Artist",
+                choices = NULL
+            ),
+
+            # Select album one
+            selectizeInput(
+                "firstAlbum",
+                "Album",
+                choices = NULL
+            ),
             
             # Select song one
             selectizeInput(
                 "firstSong",
-                h4("Song One"),
+                "Song",
+                choices = NULL
+            ),
+
+            # Song two label
+            h3(
+                "Song Two Options",
+                align = "center"
+            ),
+
+            # Select artist two
+            selectizeInput(
+                "secondArtist",
+                "Artist",
+                choices = NULL
+            ),
+
+            # Select album two
+            selectizeInput(
+                "secondAlbum",
+                "Album",
                 choices = NULL
             ),
 
             # Select song two
             selectizeInput(
                 "secondSong",
-                h4("Song Two"),
+                "Song",
                 choices = NULL
             )
         ),
@@ -45,9 +85,77 @@ ui <- fluidPage(
 # Set up shiny server
 server <- function(input, output, session) {
 
-    # Create drop down data
-    updateSelectizeInput(session, 'firstSong', choices = musicData$track_name, server = TRUE)
-    updateSelectizeInput(session, 'secondSong', choices = musicData$track_name, server = TRUE)
+    # Create drop down data for first song data
+    updateSelectizeInput(
+        session, 
+        'firstArtist', 
+        choices = musicData$artist_name, 
+        server = TRUE
+    )
+
+    observeEvent(req(input$firstArtist), {
+        updateSelectizeInput(
+            session, 
+            'firstAlbum', 
+            choices = unique(
+                subset(
+                    musicData, 
+                    musicData$artist_name == input$firstArtist
+                )$album_name
+            ), 
+            server = TRUE
+        )
+    })
+    observeEvent(req(input$firstAlbum), {
+        updateSelectizeInput(
+            session, 
+            'firstSong', 
+            choices = unique(
+                subset(
+                    musicData, 
+                    musicData$artist_name == input$firstArtist &
+                    musicData$album_name == input$firstAlbum
+                )$track_name
+            ), 
+            server = TRUE
+        )
+    })
+
+    # Create drop down data for second song data
+    updateSelectizeInput(
+        session, 
+        'secondArtist', 
+        choices = musicData$artist_name, 
+        server = TRUE
+    )
+
+    observeEvent(req(input$secondArtist), {
+        updateSelectizeInput(
+            session, 
+            'secondAlbum', 
+            choices = unique(
+                subset(
+                    musicData, 
+                    musicData$artist_name == input$secondArtist
+                )$album_name
+            ), 
+            server = TRUE
+        )
+    })
+    observeEvent(req(input$secondAlbum), {
+        updateSelectizeInput(
+            session, 
+            'secondSong', 
+            choices = unique(
+                subset(
+                    musicData, 
+                    musicData$artist_name == input$secondArtist &
+                    musicData$album_name == input$secondAlbum
+                )$track_name
+            ), 
+            server = TRUE
+        )
+    })
 
    # Create plot
     output$comparisonPlot <- renderPlot({
@@ -105,6 +213,14 @@ server <- function(input, output, session) {
         ylim(
             -1.0, 
             1.0
+        ) +
+        theme(
+            plot.title = element_text(hjust = 0.5)
+        ) +
+        labs(
+            title = "Song Comparison By Categories",
+            y = "Category Score",
+            x = ""
         )
     })
 }
