@@ -28,23 +28,17 @@ ui <- fluidPage(
     
     sidebarPanel(
       
-      # Attribute of Focus / Category
+      # Filters
       h3(
-        "Category",
+        "Filter",
         align = "center"
       ),
       
       # Select category
       selectizeInput(
         "attributeOfFocus",
-        "Attribute",
+        "Focus Category",
         choices = NULL
-      ),
-      
-      # Filter Options
-      h3(
-        "More Filter Options",
-        align = "center"
       ),
       
       # Select genre
@@ -105,7 +99,7 @@ server <- function(input, output, session) {
                    sort(unique(
                      musicData$genre
                    ))
-                ),
+      ),
       server = TRUE
     )
   })
@@ -119,7 +113,7 @@ server <- function(input, output, session) {
              artist = artist_name,
              album = album_name,
              score = .data[[input$attributeOfFocus]]
-             ) |>
+      ) |>
       select(song, artist, album, genre, score) |>
       arrange(desc(score)) |>
       distinct(song, .keep_all = TRUE)
