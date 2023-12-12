@@ -144,7 +144,7 @@ server <- function(input, output, session) {
     
     # Display graph
     ggplot(
-      slice(filteredMusicData, 1:20),
+      slice(filteredMusicData, 1:input$topN),
       aes(
         x = song,
         y = score
