@@ -69,7 +69,7 @@ ui <- fluidPage(
       plotOutput("topSongsPlot"),
       
       # Display list of top songs
-      verbatimTextOutput("topSongsList")
+      htmlOutput("topSongsList")
       
       #TODO: Display list of top x number of songs from filtered selection, sorted desc by category
       #TODO: Display song titles and artists in big/bold letters, then less important info in smaller sub-text underneath song title/artist. - i.e. album, genre, year, etc.
@@ -140,13 +140,16 @@ server <- function(input, output, session) {
     topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
     
     # Format the list into an HTML table
-    topSongsTable <- paste("<table border='1'><tr><th>Song</th><th>Artist</th><th>Album</th><th>Genre</th><th>Score</th></tr>",
-                           apply(topSongsList, 1, function(row) {
-                             paste("<tr><td>", row[1], "</td><td>", row[2], "</td><td>",
-                                   row[3], "</td><td>", row[4], "</td><td>",
-                                   row[5], "</td></tr>")
-                           }),
-                           "</table>")
+    topSongsTable <- paste(
+      "<table style='width:100%; border-collapse: collapse;'>",
+      "<tr style='background-color: #f2f2f2;'><th>Song</th><th>Artist</th><th>Album</th><th>Genre</th><th>Score</th></tr>",
+      apply(topSongsList, 1, function(row) {
+        paste("<tr><td>", row[1], "</td><td>", row[2], "</td><td>",
+              row[3], "</td><td>", row[4], "</td><td>",
+              row[5], "</td></tr>")
+      }),
+      "</table>"
+    )
     
     # Use HTML function to interpret the HTML code
     HTML(topSongsTable)
