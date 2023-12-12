@@ -143,11 +143,11 @@ server <- function(input, output, session) {
     topSongsTable <- paste(
       "<table style='width:100%; border-collapse: collapse;'>",
       "<tr style='background-color: #f2f2f2;'><th>Song</th><th>Artist</th><th>Album</th><th>Genre</th><th>Score</th></tr>",
-      apply(topSongsList, 1, function(row) {
+      paste(apply(topSongsList, 1, function(row) {
         paste("<tr><td>", row[1], "</td><td>", row[2], "</td><td>",
               row[3], "</td><td>", row[4], "</td><td>",
               row[5], "</td></tr>")
-      }),
+      }), collapse = ""),
       "</table>"
     )
     
