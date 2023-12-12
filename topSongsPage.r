@@ -121,22 +121,27 @@ server <- function(input, output, session) {
              score = .data[[input$attributeOfFocus]]
              ) |>
       select(song, artist, album, genre, score) |>
-      distinct(song, .keep_all = TRUE) |>
       arrange(desc(score)) |>
-      slice(1:20)
+      distinct(song, .keep_all = TRUE)
+    
+    # Print attribute of focus for debugging
+    print(paste("Attribute of Focus:", input$attributeOfFocus))
+    
+    # Print selected genre for debugging
+    print(paste("Selected Genre:", input$genre))
     
     if (!(input$genre == '[ALL]')) {
       filteredMusicData <- filteredMusicData |>
         filter(genre == input$genre)
     }
     
-    #TEST PRINT
+    # Print filtered data for debugging
     print(filteredMusicData)
     
     
     # Display graph
     ggplot(
-      filteredMusicData,
+      slice(filteredMusicData, 1:20),
       aes(
         x = song,
         y = score
