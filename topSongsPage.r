@@ -34,6 +34,15 @@ ui <- fluidPage(
         align = "center"
       ),
       
+      # Slider for Top N
+      sliderInput(
+        "topN",
+        "Number of Top Songs to Display:",
+        min = 1,
+        max = 100,
+        value = 10
+      ),
+      
       # Select category
       selectizeInput(
         "attributeOfFocus",
