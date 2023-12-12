@@ -66,7 +66,10 @@ ui <- fluidPage(
     # Main section for displaying list and plot
     mainPanel(
       
-      plotOutput("topSongsPlot")
+      plotOutput("topSongsPlot"),
+      
+      # Display list of top songs
+      verbatimTextOutput("topSongsList")
       
       #TODO: Display list of top x number of songs from filtered selection, sorted desc by category
       #TODO: Display song titles and artists in big/bold letters, then less important info in smaller sub-text underneath song title/artist. - i.e. album, genre, year, etc.
@@ -75,8 +78,6 @@ ui <- fluidPage(
     )
     
   )
-  
-  
   
 )
 
@@ -113,38 +114,15 @@ server <- function(input, output, session) {
     )
   })
   
-  # Create plot
+  # Create plot and update top songs list
   output$topSongsPlot <- renderPlot({
     
-    # Select only needed data
-    filteredMusicData <- musicData |>
-      mutate(song = track_name,
-             artist = artist_name,
-             album = album_name,
-             score = .data[[input$attributeOfFocus]]
-      ) |>
-      select(song, artist, album, genre, score) |>
-      arrange(desc(score)) |>
-      distinct(song, .keep_all = TRUE)
-    
-    # Print attribute of focus for debugging
-    print(paste("Attribute of Focus:", input$attributeOfFocus))
-    
-    # Print selected genre for debugging
-    print(paste("Selected Genre:", input$genre))
-    
-    if (!(input$genre == '[ALL]')) {
-      filteredMusicData <- filteredMusicData |>
-        filter(genre == input$genre)
-    }
-    
-    # Print filtered data for debugging
-    print(filteredMusicData)
-    
+    # Prepare filtered data
+    filteredMusicData <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
     
     # Display graph
     ggplot(
-      slice(filteredMusicData, 1:input$topN),
+      filteredMusicData,
       aes(
         x = song,
         y = score
@@ -155,12 +133,54 @@ server <- function(input, output, session) {
         title = "Top Songs"
       )
   })
+  
+  # Display top songs list
+  output$topSongsList <- renderUI({
+    # Prepare filtered data
+    topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
+    
+    # Format the list into an HTML table
+    topSongsTable <- paste("<table border='1'><tr><th>Song</th><th>Artist</th><th>Album</th><th>Genre</th><th>Score</th></tr>",
+                           apply(topSongsList, 1, function(row) {
+                             paste("<tr><td>", row[1], "</td><td>", row[2], "</td><td>",
+                                   row[3], "</td><td>", row[4], "</td><td>",
+                                   row[5], "</td></tr>")
+                           }),
+                           "</table>")
+    
+    # Use HTML function to interpret the HTML code
+    HTML(topSongsTable)
+  })
+  
+}
+
+# Helper function to prepare filtered data
+prepareFilteredData <- function(musicData, attributeOfFocus, selectedGenre, topN) {
+  
+  filteredMusicData <- musicData |>
+    mutate(song = track_name,
+           artist = artist_name,
+           album = album_name,
+           score = .data[[attributeOfFocus]]
+    ) |>
+    select(song, artist, album, genre, score) |>
+    arrange(desc(score)) |>
+    distinct(song, .keep_all = TRUE)
+  
+  if (!(selectedGenre == '[ALL]')) {
+    filteredMusicData <- filteredMusicData |>
+      filter(genre == selectedGenre)
+  }
+  
+  filteredMusicData <- filteredMusicData |>
+    slice(1:topN)
+
+  return(filteredMusicData)
 }
 
 # Run shiny app
 shinyApp(ui, server)
 
 # Notes
-# - Top n slider
 # - Ordering of bars on chart
 # - UI: Switch between tabs
