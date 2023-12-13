@@ -139,20 +139,31 @@ server <- function(input, output, session) {
     # Prepare filtered data
     topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
     
-    # Format the list into an HTML table
-    topSongsTable <- paste(
-      "<table style='width:100%; border-collapse: collapse;'>",
-      "<tr style='background-color: #f2f2f2;'><th>Song</th><th>Artist</th><th>Album</th><th>Genre</th><th>Score</th></tr>",
-      paste(apply(topSongsList, 1, function(row) {
-        paste("<tr><td>", row[1], "</td><td>", row[2], "</td><td>",
-              row[3], "</td><td>", row[4], "</td><td>",
-              row[5], "</td></tr>")
-      }), collapse = ""),
-      "</table>"
+    # Format the list into an HTML structure
+    topSongsHTML <- paste(
+      "<div>",
+        sapply(seq_len(nrow(topSongsList)), function(i) {
+          paste(
+            "<div style='border: 2px solid #ddd; border-radius: 32px; margin: 8px; display: flex; align-items: center;'>",   # Outer container for song "object"
+              "<div style='font-size: 48px; color: #509; font-weight: bold; margin-left: 16px; margin-right: 8px;'>", i,   # Number text
+              "</div>",
+              "<div style='font-size: 48px; color: #eee; margin-right: 8px;'>", "|",   # Divider line
+              "</div>",
+              "<div style='flex-grow: 1; text-align: left;'>",   # Container for song, artist, and album text
+                "<div style='font-size: 24px; color: #000; font-weight: bold;'>", topSongsList[i, "song"],   # Song text
+                "</div>",
+                "<div style='font-size: 16px; color: #000;'>", topSongsList[i, "artist"], " - ", topSongsList[i, "album"],   # Artist and Album text
+                "</div>",
+              "</div>",
+            "</div>",
+            sep = ""
+          )
+        }),
+      "</div>"
     )
     
     # Use HTML function to interpret the HTML code
-    HTML(topSongsTable)
+    HTML(topSongsHTML)
   })
   
 }
