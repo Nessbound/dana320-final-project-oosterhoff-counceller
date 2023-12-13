@@ -6,6 +6,7 @@
 
 # Import libraries
 library(tidyverse)
+library(shinyjs)
 library(shiny)
 library(ggplot2)
 
@@ -15,70 +16,69 @@ print(musicData)
 
 # Set up shiny ui
 ui <- fluidPage(
+  
+  # Initialize shinyjs
+  useShinyjs(),
+  
   # Title
   titlePanel(
     h1(
-      "Top Songs App",
-      align = "center"
-    )
+      "Top Songs App", 
+       align = "center"
+      )
   ),
   
-  # Layout
-  sidebarLayout(
+  # Main section for displaying list and plot
+  mainPanel(
     
-    sidebarPanel(
-      
-      # Filters
-      h3(
-        "Filter",
-        align = "center"
-      ),
-      
-      # Slider for Top N
-      sliderInput(
-        "topN",
-        "Number of Top Songs to Display:",
-        min = 1,
-        max = 100,
-        value = 10
-      ),
-      
-      # Select category
-      selectizeInput(
-        "attributeOfFocus",
-        "Focus Category",
-        choices = NULL
-      ),
-      
-      # Select genre
-      selectizeInput(
-        "genre",
-        "Genre",
-        choices = NULL
-      )
-      
-      #TODO: Maybe add a way for multiple categories to be selected? Songs can then be displayed in bar clusters.
-      #      Each song has a cluster of 1-3 bars, and each bar is the rating for the selected attributes. - Would need a way to determine top order if multiple attributes are selected
-      #TODO: Add filter options - artists, etc.
-      
+    # Add a button to toggle the filters popup
+    actionButton("toggleFilters", "Filters", style = "margin-bottom: 20px; margin-left: 20px;"),
+    
+    plotOutput("topSongsPlot"),
+    
+    # Display list of top songs
+    htmlOutput("topSongsList")
+    
     ),
-    
-    # Main section for displaying list and plot
-    mainPanel(
-      
-      plotOutput("topSongsPlot"),
-      
-      # Display list of top songs
-      htmlOutput("topSongsList")
-      
-      #TODO: Display list of top x number of songs from filtered selection, sorted desc by category
-      #TODO: Display song titles and artists in big/bold letters, then less important info in smaller sub-text underneath song title/artist. - i.e. album, genre, year, etc.
-      #TODO: Display related graphs/plots
-      
-    )
-    
-  )
   
+  # Filters popup
+  shinyjs::hidden(
+    div(
+      id = "filterPopup",
+      div(
+        # Filters
+        h3(
+          "Filters",
+          align = "center"
+        ),
+        
+        # Slider for Top N
+        sliderInput(
+          "topN",
+          "Number of Songs",
+          min = 1,
+          max = 100,
+          value = 10
+        ),
+        
+        # Select category
+        selectizeInput(
+          "attributeOfFocus",
+          "Focus Category",
+          choices = NULL
+        ),
+        
+        # Select genre
+        selectizeInput(
+          "genre",
+          "Genre",
+          choices = NULL
+        ),
+      ),
+      
+      style = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: white; border: 2px solid #ddd; border-radius: 10px;"
+    )
+  )
 )
 
 # Set up shiny server
@@ -87,8 +87,7 @@ server <- function(input, output, session) {
   # Create drop down for attribute of focus
   updateSelectizeInput(
     session, 
-    'attributeOfFocus', 
-    # TODO: Use better way - I know there is a way, but can't remember how
+    'attributeOfFocus',
     choices = c(
       "danceability",
       "energy",
@@ -106,9 +105,7 @@ server <- function(input, output, session) {
       session, 
       'genre', 
       choices = c( '[ALL]', 
-                   sort(unique(
-                     musicData$genre
-                   ))
+                   sort(unique(musicData$genre))
       ),
       server = TRUE
     )
@@ -136,34 +133,40 @@ server <- function(input, output, session) {
   
   # Display top songs list
   output$topSongsList <- renderUI({
+    
     # Prepare filtered data
     topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
     
     # Format the list into an HTML structure
     topSongsHTML <- paste(
       "<div>",
-        sapply(seq_len(nrow(topSongsList)), function(i) {
-          paste(
-            "<div style='border: 2px solid #ddd; border-radius: 32px; margin: 8px; display: flex; align-items: center;'>",   # Outer container for song "object"
-              "<div style='font-size: 48px; color: #509; font-weight: bold; margin-left: 16px; margin-right: 8px;'>", i,   # Number text
-              "</div>",
-              "<div style='font-size: 48px; color: #eee; margin-right: 8px;'>", "|",   # Divider line
-              "</div>",
-              "<div style='flex-grow: 1; text-align: left;'>",   # Container for song, artist, and album text
-                "<div style='font-size: 24px; color: #000; font-weight: bold;'>", topSongsList[i, "song"],   # Song text
-                "</div>",
-                "<div style='font-size: 16px; color: #000;'>", topSongsList[i, "artist"], " - ", topSongsList[i, "album"],   # Artist and Album text
-                "</div>",
-              "</div>",
-            "</div>",
-            sep = ""
-          )
-        }),
+      sapply(seq_len(nrow(topSongsList)), function(i) {
+        paste(
+          "<div style='border: 2px solid #ddd; border-radius: 32px; margin: 16px; display: flex; align-items: center;'>",   # Outer container for song "object"
+          "<div style='font-size: 48px; color: #509; font-weight: bold; margin-left: 16px; margin-right: 12px;'>", i,   # Number text
+          "</div>",
+          "<div style='font-size: 48px; color: #eee; margin-right: 16px;'>", "|",   # Divider line
+          "</div>",
+          "<div style='flex-grow: 1; text-align: left;'>",   # Container for song and artist text
+          "<div style='font-size: 24px; color: #000; font-weight: bold;'>", topSongsList[i, "song"],   # Song text
+          "</div>",
+          "<div style='font-size: 16px; color: #000;'>", topSongsList[i, "artist"],   # Artist text
+          "</div>",
+          "</div>",
+          "</div>",
+          sep = ""
+        )
+      }),
       "</div>"
     )
     
     # Use HTML function to interpret the HTML code
     HTML(topSongsHTML)
+  })
+  
+  # Add shinyjs code to toggle the filters popup
+  observeEvent(input$toggleFilters, {
+    shinyjs::toggle("filterPopup")
   })
   
 }
@@ -188,13 +191,9 @@ prepareFilteredData <- function(musicData, attributeOfFocus, selectedGenre, topN
   
   filteredMusicData <- filteredMusicData |>
     slice(1:topN)
-
+  
   return(filteredMusicData)
 }
 
 # Run shiny app
 shinyApp(ui, server)
-
-# Notes
-# - Ordering of bars on chart
-# - UI: Switch between tabs
