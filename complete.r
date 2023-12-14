@@ -350,7 +350,7 @@ server <- function(input, output, session) {
       # Create a ggplot object
       base_plot <- ggplot(filteredMusicData, aes(x = reorder(song, -score), y = score, text = paste("Song: ", song, "<br>", input$attributeOfFocus, ": ", score))) +
         geom_bar(stat = "identity", fill = "#550099") +
-        labs(title = "Top Songs", x = "Song", y = input$attributeOfFocus) +
+        labs(title = paste("Top Songs by", input$attributeOfFocus), x = "Song", y = input$attributeOfFocus) +
         theme_minimal() +
         theme(axis.text.x = element_blank())  # Remove x-axis text
       
