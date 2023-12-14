@@ -3,6 +3,7 @@ library(tidyverse)
 library(shinyjs)
 library(shiny)
 library(ggplot2)
+library(plotly)
 
 # Load in the music data
 musicData <- get(load("Data/data-music.RData"))
@@ -99,55 +100,63 @@ ui <- fluidPage(
             # Tab title
             title = "Top Songs",
 
-            mainPanel(
-    
-                # Add a button to toggle the filters popup
-                actionButton("toggleFilters", "Filters", style = "margin-bottom: 20px; margin-left: 20px;"),
-                
-                plotOutput("topSongsPlot"),
-                
-                # Display list of top songs
-                htmlOutput("topSongsList")
-                
+            # Display list and plot
+            fluidRow(
+              column(12,
+                     # Add a button to toggle the filters popup
+                     actionButton("toggleFilters", "Filters", style = "margin-bottom: 20px; margin-left: 20px;")
+              )
             ),
             
-            # Filters popup
-            shinyjs::hidden(
+            fluidRow(
+              # Filters popup
+              shinyjs::hidden(
                 div(
-                id = "filterPopup",
-                div(
+                  id = "filterPopup",
+                  align = "center",
+                  div(
                     # Filters
                     h3(
-                    "Filters",
-                    align = "center"
+                      "Filters",
+                      align = "center"
                     ),
                     
                     # Slider for Top N
                     sliderInput(
-                    "topN",
-                    "Number of Songs",
-                    min = 1,
-                    max = 100,
-                    value = 10
+                      "topN",
+                      "Number of Songs",
+                      min = 1,
+                      max = 100,
+                      value = 10
                     ),
                     
                     # Select category
                     selectizeInput(
-                    "attributeOfFocus",
-                    "Focus Category",
-                    choices = NULL
+                      "attributeOfFocus",
+                      "Focus Category",
+                      choices = NULL
                     ),
                     
                     # Select genre
                     selectizeInput(
-                    "genre",
-                    "Genre",
-                    choices = NULL
+                      "genre",
+                      "Genre",
+                      choices = NULL
                     ),
-                ),
-                
-                style = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: white; border: 2px solid #ddd; border-radius: 10px;"
+                  ),
+                  
+                  style = "padding: 20px; background-color: white; border: 2px solid #ddd; border-radius: 10px;"
                 )
+              )
+            ),
+            
+            fluidRow(
+              column(12,
+                     plotlyOutput("topSongsPlot"),
+                     
+                     # Display list of top songs
+                     htmlOutput("topSongsList")
+              )
             )
         )
     )
@@ -295,90 +304,104 @@ server <- function(input, output, session) {
         )
     })
 
-    # Create drop down for attribute of focus
-  updateSelectizeInput(
-    session, 
-    'attributeOfFocus',
-    choices = c(
-      "danceability",
-      "energy",
-      "speechiness",
-      "acousticness",
-      "instrumentalness",
-      "liveness",
-      "popularity"
-    ),
-    server = TRUE
-  )
-  
-  observeEvent(req(input$attributeOfFocus), {
-    updateSelectizeInput(
-      session, 
-      'genre', 
-      choices = c( '[ALL]', 
-                   sort(unique(musicData$genre))
-      ),
-      server = TRUE
-    )
-  })
-  
-  # Create plot and update top songs list
-  output$topSongsPlot <- renderPlot({
-    
-    # Prepare filtered data
-    filteredMusicData <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
-    
-    # Display graph
-    ggplot(
-      filteredMusicData,
-      aes(
-        x = song,
-        y = score
-      )
-    ) + 
-      geom_col() +
-      labs(
-        title = "Top Songs"
-      )
-  })
-  
-  # Display top songs list
-  output$topSongsList <- renderUI({
-    
-    # Prepare filtered data
-    topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
-    
-    # Format the list into an HTML structure
-    topSongsHTML <- paste(
-      "<div>",
-      sapply(seq_len(nrow(topSongsList)), function(i) {
-        paste(
-          "<div style='border: 2px solid #ddd; border-radius: 32px; margin: 16px; display: flex; align-items: center;'>",   # Outer container for song "object"
-          "<div style='font-size: 48px; color: #509; font-weight: bold; margin-left: 16px; margin-right: 12px;'>", i,   # Number text
-          "</div>",
-          "<div style='font-size: 48px; color: #eee; margin-right: 16px;'>", "|",   # Divider line
-          "</div>",
-          "<div style='flex-grow: 1; text-align: left;'>",   # Container for song and artist text
-          "<div style='font-size: 24px; color: #000; font-weight: bold;'>", topSongsList[i, "song"],   # Song text
-          "</div>",
-          "<div style='font-size: 16px; color: #000;'>", topSongsList[i, "artist"],   # Artist text
-          "</div>",
-          "</div>",
-          "</div>",
-          sep = ""
-        )
-      }),
-      "</div>"
+    # Initialize reactive values to store filters
+    rv <- reactiveValues(
+      attributeOfFocus = "Danceability",  # Set default value
+      genre = "[ALL]"  # Set default value
     )
     
-    # Use HTML function to interpret the HTML code
-    HTML(topSongsHTML)
-  })
-  
-  # Add shinyjs code to toggle the filters popup
-  observeEvent(input$toggleFilters, {
-    shinyjs::toggle("filterPopup")
-  })
+    # Create drop-down for attribute of focus
+    observe({
+      updateSelectizeInput(
+        session, 
+        'attributeOfFocus',
+        choices = c(
+          "Danceability",
+          "Energy",
+          "Speechiness",
+          "Acousticness",
+          "Instrumentalness",
+          "Liveness"
+        ),
+        selected = rv$attributeOfFocus
+      )
+    })
+    
+    # Update genre drop-down based on attribute of focus
+    observe({
+      updateSelectizeInput(
+        session, 
+        'genre', 
+        choices = c('[ALL]', sort(unique(musicData$genre))),
+        selected = rv$genre
+      )
+    })
+    
+    # Create plot and update top songs list
+    output$topSongsPlot <- renderPlotly({
+      
+      # Prepare filtered data
+      filteredMusicData <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
+      
+      # Calculate dynamic y-axis limits - set them slightly below and above min amd max respectively
+      y_min <- min(filteredMusicData$score) * 0.999
+      y_max <- max(filteredMusicData$score) * 1.001
+      
+      # Create a ggplot object
+      base_plot <- ggplot(filteredMusicData, aes(x = reorder(song, -score), y = score, text = paste("Song: ", song, "<br>", input$attributeOfFocus, ": ", score))) +
+        geom_bar(stat = "identity", fill = "#550099") +
+        labs(title = "Top Songs", x = "Song", y = input$attributeOfFocus) +
+        theme_minimal() +
+        theme(axis.text.x = element_blank())  # Remove x-axis text
+      
+      # Convert ggplot object to plotly
+      topSongsPlot <- ggplotly(base_plot, tooltip = c("text"), hoverinfo = "x+y+text")
+      
+      # Set dynamic y-axis limits in layout
+      topSongsPlot <- layout(topSongsPlot, yaxis = list(range = c(y_min, y_max)))
+      
+      # Return the interactive plot
+      topSongsPlot
+    })
+    
+    # Display top songs list
+    output$topSongsList <- renderUI({
+      
+      # Prepare filtered data
+      topSongsList <- prepareFilteredData(musicData, input$attributeOfFocus, input$genre, input$topN)
+      
+      # Format the list into an HTML structure
+      topSongsHTML <- paste(
+        "<div>",
+        sapply(seq_len(nrow(topSongsList)), function(i) {
+          paste(
+            "<div style='border: 2px solid #ddd; border-radius: 32px; margin: 16px; display: flex; align-items: center;'>",   # Outer container for song "object"
+            "<div style='font-size: 48px; color: #509; font-weight: bold; margin-left: 16px; margin-right: 12px;'>", i,   # Number text
+            "</div>",
+            "<div style='font-size: 48px; color: #eee; margin-right: 16px;'>", "|",   # Divider line
+            "</div>",
+            "<div style='flex-grow: 1; text-align: left;'>",   # Container for song and artist text
+            "<div style='font-size: 24px; color: #000; font-weight: bold;'>", topSongsList[i, "song"],   # Song text
+            "</div>",
+            "<div style='font-size: 16px; color: #000;'>", topSongsList[i, "artist"],   # Artist text
+            "</div>",
+            "</div>",
+            "</div>",
+            sep = ""
+          )
+        }),
+        "</div>"
+      )
+      
+      # Use HTML function to interpret the HTML code
+      HTML(topSongsHTML)
+    })
+    
+    # Add shinyjs code to toggle the filters popup
+    observeEvent(input$toggleFilters, {
+      shinyjs::toggle("filterPopup")
+    })
+    
 }
 
 # Helper function to prepare filtered data
@@ -388,7 +411,7 @@ prepareFilteredData <- function(musicData, attributeOfFocus, selectedGenre, topN
     mutate(song = track_name,
            artist = artist_name,
            album = album_name,
-           score = .data[[attributeOfFocus]]
+           score = as.numeric(.data[[tolower(attributeOfFocus)]])
     ) |>
     select(song, artist, album, genre, score) |>
     arrange(desc(score)) |>
