@@ -77,7 +77,9 @@ ui <- fluidPage(
 
         # Display section
         mainPanel(
-            plotOutput("comparisonPlot")
+            plotOutput("comparisonPlot"),
+            p("The displayed values are the winning value between the two songs. For example, if song A has 
+            a dancability of 0.3, and song B has a dancability of 0.5, the dancability of song B will be shown.")
         )
     )
 )
@@ -223,6 +225,8 @@ server <- function(input, output, session) {
             x = ""
         )
     })
+
+    # Add text box below the plot
 }
 
 # Run shiny app
